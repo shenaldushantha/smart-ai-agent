@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My AI Agent</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:Arial; background:#0a0a0f; color:white;
+           display:flex; justify-content:center;
+           align-items:center; height:100vh; }
+    .box { width:680px; background:#16161f; border-radius:16px;
+           padding:24px; display:flex; flex-direction:column; height:80vh; }
+    h2 { color:#00ffb2; text-align:center; margin-bottom:16px; }
+    .chat { flex:1; overflow-y:auto; display:flex;
+            flex-direction:column; gap:10px; padding:8px; }
+    .user { background:#0f3460; align-self:flex-end;
+            padding:10px 14px; border-radius:12px; max-width:75%; }
+    .bot  { background:#1e1e38; align-self:flex-start;
+            padding:10px 14px; border-radius:12px; max-width:75%; }
+    .row  { display:flex; gap:10px; margin-top:16px; }
+    input { flex:1; padding:12px; background:#0f3460;
+            border:none; border-radius:10px; color:white;
+            font-size:15px; outline:none; }
+    button { padding:12px 20px; background:#00ffb2; color:#000;
+             border:none; border-radius:10px; cursor:pointer;
+             font-weight:bold; font-size:15px; }
+    button:hover { background:#00d4a0; }
+    .typing { color:#aaa; font-style:italic; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>🤖 My AI Agent</h2>
+    <div class="chat" id="chat">
+      <div class="bot">Hello! Ask me anything.</div>
+    </div>
+    <div class="row">
+      <input id="inp" placeholder="Type a message..."
+             onkeydown="if(event.key==='Enter') send()"/>
+      <button onclick="send()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    let history = [];
+
+    async function send() {
+      const inp = document.getElementById('inp');
+      const chat = document.getElementById('chat');
+      const msg = inp.value.trim();
+      if (!msg) return;
+
+      // Show user message
+      chat.innerHTML += `<div class="user">${msg}</div>`;
+      chat.innerHTML += `<div class="bot typing" id="typing">Thinking...</div>`;
+      inp.value = '';
+      chat.scrollTop = chat.scrollHeight;
+
+      try {
+        const r = await fetch('/chat', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ message: msg, history })
+        });
+        const d = await r.json();
+        document.getElementById('typing').remove();
+        chat.innerHTML += `<div class="bot">${d.reply}</div>`;
+        history.push({role:'user', content:msg});
+        history.push({role:'assistant', content:d.reply});
+      } catch(e) {
+        document.getElementById('typing').remove();
+        chat.innerHTML += `<div class="bot">Error: Could not connect to server.</div>`;
+      }
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
+</body>
+</html>
